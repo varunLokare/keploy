@@ -159,14 +159,24 @@ func (j *Javascript) GetCoverage() (models.TestCoverage, error) {
 	}
 
 	for filename, lines := range linesCoveredPerFile {
-		testCov.FileCov[filename] = strconv.FormatFloat(float64(coveredLinesPerFile[filename]*100)/float64(len(lines)), 'f', 2, 64) + "%"
+		testCov.FileCov[filename] = formatCoveragePercent(coveredLinesPerFile[filename], len(lines))
 	}
-	testCov.TotalCov = strconv.FormatFloat(float64(totalCoveredLines*100)/float64(totalLines), 'f', 2, 64) + "%"
+	testCov.TotalCov = formatCoveragePercent(totalCoveredLines, totalLines)
 	testCov.Loc = models.Loc{
 		Total:   totalLines,
 		Covered: totalCoveredLines,
 	}
 	return testCov, nil
+}
+
+// formatCoveragePercent renders covered/total as a percentage. A total of zero
+// means there is no statement to cover, so it reports 0.00% instead of the NaN
+// that dividing zero by zero would produce.
+func formatCoveragePercent(covered, total int) string {
+	if total == 0 {
+		return "0.00%"
+	}
+	return strconv.FormatFloat(float64(covered*100)/float64(total), 'f', 2, 64) + "%"
 }
 
 func (j *Javascript) AppendCoverage(coverage *models.TestCoverage, testRunID string) error {
